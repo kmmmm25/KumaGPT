@@ -154,8 +154,9 @@ Google ColabのGPUランタイムでの実行を想定しています。メタ�
 - 再開時は `checkpoint_path` を変更し、学習時と同じトークナイザー・モデル設定・scheduler設定を使用してください。元のトークナイザーを読み込み、再学習しないことが重要です。
 - 再開用セルの後に初期学習用セルを実行すると、モデルとOptimizerが新しく作り直されます。どちらか一方を選択してください。
 - 事前学習チェックポイントにはモデル・Optimizer・schedulerの状態とconfigを保存します。SFTチェックポイントには `sft_optimizer_state_dict` と `sft_scheduler_state_dict` を保存します。SFT再開専用セルは現在ありません。
-- 最終セルの `KumaGPT_2.pt` は現在のモデル重みを保存しますが、Optimizer / schedulerは事前学習側の変数を参照しています。推論には使えますが、SFT再開用には各エポックの `sft_model_{i}.pt` を参照してください。
-- リポジトリには学習済み重み、トークナイザー、学習データを同梱していません。
+- Notebook最終セルの `KumaGPT_2.pt` はNotebook内のエクスポート例です。現在のWebアプリ本体はこのファイルではなく、プロジェクト直下の `KumaGPT4.pt` を読み込みます。
+- `KumaGPT4.pt` は推論用の `config` と `model_state_dict` を含むSFT済みチェックポイントです。学習再開には、Optimizer / schedulerも保存された各学習段階のチェックポイントを使用してください。
+- `KumaGPT4.pt`、`kumagpt_unigram.model`、`kumagpt_unigram.vocab` はローカルのプロジェクト直下に配置しています。モデルファイルは約120MBあるためGit管理から除外しており、GitHubからcloneした場合は別途同じ場所へ用意する必要があります。
 - トークナイザー学習は記事を連結した文字列を入力ファイルに書き込みます。SentencePieceの行長制限によるスキップが発生していないか、学習ログを確認してください。
 
 ## 文章生成
@@ -180,10 +181,12 @@ print(tokenizer.decode(y[0].tolist()))
 ```text
 KumaGPT/
 ├── Kuma_GPT.ipynb                 # モデル実装・事前学習・SFT・生成
+├── KumaGPT4.pt                    # Webアプリが使用するSFT済みモデル（Git管理外）
+├── kumagpt_unigram.model          # KumaGPT4と組になるTokenizer（Git管理外）
+├── kumagpt_unigram.vocab          # Tokenizer語彙表（Git管理外・推論には不要）
 ├── KumaGPT_backend_requirements.md
 ├── backend/
 │   ├── app/                      # FastAPI・DB・推論処理
-│   ├── artifacts/                # 重みとトークナイザーの配置先
 │   ├── requirements.txt
 │   ├── requirements-model.txt
 │   └── tests/
@@ -217,22 +220,28 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-画面は http://localhost:5173 、APIドキュメントは http://localhost:8000/docs で開けます。既定の `demo` モードは入力を返す動作確認用で、KumaGPTの推論結果ではありません。
+画面は http://localhost:5173 、APIドキュメントは http://localhost:8000/docs で開けます。現在の既定設定は `torch` モードで、プロジェクト直下の `KumaGPT4.pt` をKumaGPT本体として読み込みます。
 
-### 学習済みモデルを接続する
+### Webアプリが使用するモデル
 
-1. `KumaGPT_2.pt` を `backend/artifacts/KumaGPT_2.pt` に配置します。
-2. 同じ学習で使用した `kumagpt_unigram.model` を `backend/artifacts/tokenizer.model` という名前で配置します（ファイル名の変更のみ）。
-3. バックエンドの仮想環境で `python -m pip install -r requirements-model.txt` を実行します。
-4. `backend/.env` を変更し、バックエンドを再起動します。
+現在のローカル構成では、次の2ファイルを組にして推論します。
+
+- `KumaGPT4.pt`: Webアプリで実際に使用するSFT済みモデル本体
+- `kumagpt_unigram.model`: KumaGPT4の学習時に使用したSentencePiece Tokenizer
+
+`kumagpt_unigram.vocab` は語彙の確認用で、推論処理では読み込みません。`KumaGPT4.pt` と `.model` は必ず同じ学習時点の組み合わせを使用してください。
+
+バックエンドを`backend`ディレクトリから起動する場合、設定は次のとおりです。
 
 ```dotenv
 KUMAGPT_MODEL_BACKEND=torch
-KUMAGPT_MODEL_PATH=./artifacts/KumaGPT_2.pt
-KUMAGPT_TOKENIZER_PATH=./artifacts/tokenizer.model
+KUMAGPT_MODEL_PATH=../KumaGPT4.pt
+KUMAGPT_TOKENIZER_PATH=../kumagpt_unigram.model
 ```
 
-推論時はCUDAが利用可能ならGPU、そうでなければCPUを使用します。Webアプリは直近10件のメッセージからプロンプトを作成しますが、モデルに実際に渡るのは最大256トークンです。
+必要なライブラリは、バックエンドの仮想環境で `python -m pip install -r requirements-model.txt` を実行して導入します。モデルまたはTokenizerが見つからない場合は、バックエンド起動時にエラーになります。
+
+推論時はCUDAが利用可能ならGPU、そうでなければCPUを使用します。Webアプリは直近10件のメッセージから、NotebookのSFT形式に合わせて `<user>`、`<assistant>`、`<|endoftext|>` を含むプロンプトを組み立てます。モデルに実際に渡るのは最大256トークンです。
 
 APIテスト：
 
