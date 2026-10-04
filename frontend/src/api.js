@@ -18,6 +18,6 @@ export const api = {
   renameChat: (id, title) => request(`/chats/${id}`, { method: "PATCH", body: JSON.stringify({ title }) }),
   deleteChat: (id) => request(`/chats/${id}`, { method: "DELETE" }),
   messages: (id) => request(`/chats/${id}/messages`),
-  send: (id, content) => request(`/chats/${id}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
-  sendTemporary: (content, history) => request("/temporary/messages", { method: "POST", body: JSON.stringify({ content, history: history.slice(-10) }) }),
+  send: (id, content, sampling) => request(`/chats/${id}/messages`, { method: "POST", body: JSON.stringify({ content, ...sampling }) }),
+  sendTemporary: (content, history, sampling) => request("/temporary/messages", { method: "POST", body: JSON.stringify({ content, history: history.slice(-10), ...sampling }) }),
 };

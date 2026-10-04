@@ -3,15 +3,17 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
     app_name: str = "KumaGPT API"
     api_prefix: str = "/api/v1"
     database_url: str = "sqlite:///./data/kumagpt.db"
     cors_origins: str = "http://localhost:5173"
-    model_backend: str = "demo"
-    model_path: Path = Path("./artifacts/KumaGPT_2.pt")
-    tokenizer_path: Path = Path("./artifacts/tokenizer.model")
+    model_backend: str = "torch"
+    model_path: Path = PROJECT_ROOT / "KumaGPT4.pt"
+    tokenizer_path: Path = PROJECT_ROOT / "kumagpt_unigram.model"
     max_new_tokens: int = 100
     temperature: float = 0.7
     top_k: int = 30

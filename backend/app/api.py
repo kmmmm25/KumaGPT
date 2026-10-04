@@ -64,7 +64,11 @@ async def send_message(chat_id: int, payload: SendMessage, request: Request, db:
     history = db.scalars(select(Message).where(Message.chat_id == chat_id).order_by(Message.created_at.desc(), Message.id.desc()).limit(10)).all()
     context = [{"role": item.role, "content": item.content} for item in reversed(history)]
     try:
-        answer = await request.app.state.inference.generate(context + [{"role": "user", "content": payload.content}])
+        answer = await request.app.state.inference.generate(
+            context + [{"role": "user", "content": payload.content}],
+            temperature=payload.temperature,
+            top_k=payload.top_k,
+        )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "回答の生成に失敗しました") from exc
     if not history and chat.title == "新しいチャット":
@@ -79,7 +83,11 @@ async def send_message(chat_id: int, payload: SendMessage, request: Request, db:
 async def temporary_message(payload: TemporaryMessage, request: Request):
     context = [item.model_dump() for item in payload.history] + [{"role": "user", "content": payload.content}]
     try:
-        answer = await request.app.state.inference.generate(context)
+        answer = await request.app.state.inference.generate(
+            context,
+            temperature=payload.temperature,
+            top_k=payload.top_k,
+        )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "回答の生成に失敗しました") from exc
     return TemporaryMessageRead(content=answer)

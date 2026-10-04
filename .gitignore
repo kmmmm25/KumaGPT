@@ -4,6 +4,9 @@ backend/data/
 !backend/data/.gitkeep
 backend/artifacts/*.pt
 backend/artifacts/*.model
+/KumaGPT4.pt
+/kumagpt_unigram.model
+/kumagpt_unigram.vocab
 frontend/node_modules/
 frontend/dist/
 frontend/.env

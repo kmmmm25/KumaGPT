@@ -18,6 +18,8 @@ class MessageInput(BaseModel):
 
 class SendMessage(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
+    temperature: float | None = Field(default=None, ge=0.1, le=2.0)
+    top_k: int | None = Field(default=None, ge=1, le=100)
 
     @field_validator("content")
     @classmethod

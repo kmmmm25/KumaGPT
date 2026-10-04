@@ -84,20 +84,37 @@ class KumaGPTInference:
         checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
         config = checkpoint["config"]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = spm.SentencePieceProcessor(model_file=str(tokenizer_path))
+        # SentencePiece on Windows can reject non-ASCII file paths. Loading the
+        # serialized model avoids that native path conversion entirely.
+        self.tokenizer = spm.SentencePieceProcessor(model_proto=tokenizer_path.read_bytes())
         self.model = Model(**config).to(self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.model.eval()
 
     def _build_prompt(self, messages: list[dict[str, str]]) -> str:
-        return "".join(f"<{item['role']}>{item['content']}\n" for item in messages) + "<assistant>"
+        formatted_messages = []
+        for item in messages:
+            if item["role"] == "assistant":
+                formatted_messages.append(
+                    f"<assistant>{item['content']}<|endoftext|>"
+                )
+            else:
+                formatted_messages.append(f"<user>{item['content']}")
+        return "\n".join(formatted_messages) + "\n<assistant>"
 
-    def generate(self, messages: list[dict[str, str]]) -> str:
+    def generate(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float | None = None,
+        top_k: int | None = None,
+    ) -> str:
         if self.settings.model_backend == "demo":
             return f"（デモ応答）{messages[-1]['content']}"
         import torch
         from torch.nn import functional as F
 
+        sampling_temperature = temperature if temperature is not None else self.settings.temperature
+        sampling_top_k = top_k if top_k is not None else self.settings.top_k
         prompt = self._build_prompt(messages[-self.settings.context_message_limit :])
         token_ids = self.tokenizer.encode(prompt, out_type=int)
         token_ids = token_ids[-self.model.block_size :]
@@ -106,8 +123,8 @@ class KumaGPTInference:
         with self._lock, torch.inference_mode():
             current = torch.tensor([token_ids], dtype=torch.long, device=self.device)
             for _ in range(self.settings.max_new_tokens):
-                logits = self.model(current[:, -self.model.block_size :])[:, -1, :] / self.settings.temperature
-                values, _ = torch.topk(logits, min(self.settings.top_k, logits.size(-1)))
+                logits = self.model(current[:, -self.model.block_size :])[:, -1, :] / sampling_temperature
+                values, _ = torch.topk(logits, min(sampling_top_k, logits.size(-1)))
                 logits[logits < values[:, [-1]]] = -float("inf")
                 next_token = torch.multinomial(F.softmax(logits, dim=-1), 1)
                 token_id = next_token.item()

@@ -9,6 +9,19 @@ class InferenceService:
         self.timeout = timeout
         self.semaphore = asyncio.Semaphore(1)
 
-    async def generate(self, messages: list[dict[str, str]]) -> str:
+    async def generate(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float | None = None,
+        top_k: int | None = None,
+    ) -> str:
         async with self.semaphore:
-            return await asyncio.wait_for(asyncio.to_thread(self.model.generate, messages), self.timeout)
+            return await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.model.generate,
+                    messages,
+                    temperature=temperature,
+                    top_k=top_k,
+                ),
+                self.timeout,
+            )
