@@ -302,7 +302,7 @@ npm.cmd run dev
 
 現在のローカル構成では、次の2ファイルを組にして推論します。
 
-- `KumaGPT4.pt`: Webアプリで実際に使用するSFT済みモデル本体
+- `KumaGPT4.pt`: Webアプリで実際に使用するSFT済みモデル本体。掲載してるジュピターノートブックと同じ内容を事前学習、sftともに19epoch学習済み。
 - `kumagpt_unigram.model`: KumaGPT4の学習時に使用したSentencePiece Tokenizer
 
 バックエンドを`backend`ディレクトリから起動する場合、設定は次のとおりです。
