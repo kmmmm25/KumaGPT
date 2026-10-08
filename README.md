@@ -17,7 +17,7 @@ KumaGPTは、**小規模な日本語GPTモデルをPyTorchで実装し、事前�
 
 ## モデル構造
 
-既存の学習済みモデルを読み込むのではなく、GPT型のdecoder-only Transformerを定義し、ランダム初期化した重みから学習します。
+既存の学習済みモデルを読み込むのではなく、GPT型のdecoder-only Transformerを定義し、ランダム初期化した重みから学習します。基本構造はGPT-2系を参考にしました。
 
 | 項目 | ノートブックの設定 | 意図 |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ KumaGPTは、**小規模な日本語GPTモデルをPyTorchで実装し、事前�
 | 活性化関数 | GELU | 上に同じく |
 | Dropout | 0.1（残差に加算するAttention / FFN出力） | 過学習を抑えるために導入。0.1は参考採用。 |
 | 位置表現 | 学習可能な位置埋め込み | 位置表現には学習可能なpositional embeddingを使用しました。初期実装ではGPT系の一般的な構成を参考に採用しており、RoPEなどとの比較実験で決定したわけではありません。実装がシンプルで、今回の256 token程度の短いcontextでは十分と判断して維持しました。 |
-| 正規化 | Pre-LayerNorm、最終LayerNorm |
+| 正規化 | Pre-LayerNorm、最終LayerNorm | preLnにより、勾配を伝播させやすくし、計算の安定化を狙った。なお、GPT2-系を参考にした。 |
 | 重み共有 | 入力のトークン埋め込みと出力層の重み | 取り出し方は同じになるのでparameter節約のため |
 | パラメータ数 | 10,019,648（約10M、上記設定に対応する記録） | 当初から10Mを厳密な目標にしていたわけではなく、Colab上で実験可能な小規模Transformerとして設計しました。その後、SentencePieceとweight tyingによってEmbedding周りのparameterを削減し、その分をTransformer層に再配分した結果、最終的に約10M parametersになりました。 |
 
