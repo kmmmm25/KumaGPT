@@ -34,7 +34,7 @@ KumaGPTは、**小規模な日本語GPTモデルをPyTorchで実装し、事前�
 | 重み共有 | 入力のトークン埋め込みと出力層の重み | ベクトルの取り出し方は同じになるのでparameter節約のために導入。 |
 | パラメータ数 | 10,019,648（約10M、上記設定に対応する記録） | 当初から10Mを厳密な目標にしていたわけではなく、Colab上で実験可能な小規模Transformerとして設計した。その後、SentencePieceとweight tyingによってEmbedding周りのparameterを削減し、その分をTransformer層に再配分した結果、最終的に約10M parametersになった。 |
 
-Attentionには `F.scaled_dot_product_attention(..., is_causal=True)` を使用します。未来のトークンを参照せず、直前までの文脈から次のトークンを予測する構造です。
+Attentionには `F.scaled_dot_product_attention(..., is_causal=True)` を使用します。未来のトークンを参照せず、直前までの文脈から次のトークンを予測するよう学習します。
 
 > コード中の `d_head` は全ヘッドを合わせた投影次元（256）です。1ヘッドの次元は `d_head / h = 64` になります。
 
