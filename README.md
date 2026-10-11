@@ -6,6 +6,8 @@ KumaGPTは、**小規模な日本語GPTモデルをPyTorchで実装し、事前�
 
 中心となるのは [Kuma_GPT.ipynb](Kuma_GPT.ipynb) です。Transformerの実装、SentencePieceトークナイザーの学習、日本語Wikipediaによる次トークン予測、会話データによるSFT、文章生成、チェックポイント保存までを扱っています。学習済みモデルを試すためのReact / FastAPI製ローカルチャットアプリも付属しています。
 
+限られた計算資源を考慮したモデル設計に加え、学習の安定化を目的とした各種手法を取り入れ、事前学習からSFTまで一貫して実装しました。
+
 ## Webアプリ画面
 
 ![KumaGPTのローカルWebアプリ](docs/images/kumagpt-webapp.png)
